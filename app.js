@@ -110,6 +110,49 @@ app.get('/health', (req, res) => {
 });
 
 // Rota para iniciar o bot
+// Rota para demonstração no Railway (sem WPPConnect)
+app.post('/demo-bot', async (req, res) => {
+    try {
+        const { phoneNumber } = req.body;
+        
+        if (!phoneNumber) {
+            return res.status(400).json({
+                success: false,
+                message: 'Número de telefone é obrigatório'
+            });
+        }
+
+        // Validar formato do número
+        const cleanPhone = phoneNumber.replace(/\D/g, '');
+        if (cleanPhone.length < 12 || cleanPhone.length > 13 || !cleanPhone.startsWith('55')) {
+            return res.status(400).json({
+                success: false,
+                message: 'Número inválido. Use o formato: 55XXXXXXXXXXX'
+            });
+        }
+
+        // Simular resposta de demonstração
+        const demoLinkCode = 'DEMO' + Math.random().toString(36).substr(2, 5).toUpperCase();
+        
+        res.json({
+            success: true,
+            message: `Demonstração: Bot seria conectado para ${phoneNumber}`,
+            linkCode: demoLinkCode,
+            phoneNumber: phoneNumber,
+            hasLinkCode: true,
+            note: 'DEMONSTRAÇÃO - Este é um código simulado. Para funcionalidade real, use localhost:3000',
+            isDemo: true
+        });
+        
+    } catch (error) {
+        console.error('Erro na demonstração:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno da demonstração'
+        });
+    }
+});
+
 app.post('/start-bot', async (req, res) => {
     try {
         if (botSession) {
@@ -140,6 +183,24 @@ app.post('/start-bot', async (req, res) => {
 
         console.log('Iniciando bot no ambiente:', isProduction ? 'produção' : 'desenvolvimento');
         console.log('Número do bot:', phoneNumber);
+        
+        // VERIFICAÇÃO ESPECIAL PARA RAILWAY
+        if (isProduction) {
+            console.log('Detectado ambiente Railway - Verificando disponibilidade do WPPConnect...');
+            
+            // Verificar se WPPConnect está disponível no Railway
+            if (!wppconnect || !wppconnect.create) {
+                console.log('WPPConnect não disponível no Railway - Retornando resposta simulada');
+                return res.json({
+                    success: false,
+                    message: 'WPPConnect não está disponível no ambiente Railway. Por favor, use o ambiente local para conectar o bot.',
+                    environment: 'production',
+                    note: 'O Railway não suporta completamente o WPPConnect devido a limitações de navegador. Use localhost:3000 para funcionalidade completa.',
+                    phoneNumber: phoneNumber,
+                    hasLinkCode: false
+                });
+            }
+        }
         
         // Callback para resposta imediata quando o código for gerado
         let hasResponded = false;
