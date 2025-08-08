@@ -6,7 +6,17 @@
     <title>Bot WhatsApp - Dashboard</title>
     <style>
         * {
-            margin: 0;
+                   <div class="card">
+                    <h3>🔗 Código de Conexão WhatsApp</h3>
+                    <div class="qr-section">
+                        <div id="qrStatus">
+                            <p>📱 Configure um número de telefone primeiro</p>
+                            <small>Após conectar, o código de conexão aparecerá aqui</small>
+                        </div>
+                        <div id="qrCode" class="qr-code" style="display: none;">
+                            <!-- Código será inserido aqui -->
+                        </div>
+                    </div>rgin: 0;
             padding: 0;
             box-sizing: border-box;
         }
@@ -332,9 +342,7 @@
                 update.textContent = new Date().toLocaleString('pt-BR');
                 
                 // Atualizar QR Code se disponível
-                if (data.qrCodeBase64) {
-                    showQRCode(data.qrCodeBase64);
-                } else if (data.linkCode) {
+                if (data.linkCode) {
                     showLinkCode(data.linkCode);
                 } else if (!data.connected && data.phoneNumber) {
                     showQRStatus('🔄 Gerando QR Code...');
@@ -352,9 +360,7 @@
                 const response = await fetch('/api/qrcode');
                 const data = await response.json();
                 
-                if (data.success && data.qrCodeBase64) {
-                    showQRCode(data.qrCodeBase64);
-                } else if (data.success && data.linkCode) {
+                if (data.success && data.linkCode) {
                     showLinkCode(data.linkCode);
                 } else if (data.phoneNumber && !botConnected) {
                     showQRStatus('🔄 Aguardando QR Code...');
@@ -397,18 +403,15 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert('✅ Processo de conexão iniciado! Aguarde o QR Code...');
-                    showQRStatus('🔄 Conectando... Gerando QR Code...');
+                    alert('✅ Processo de conexão iniciado! Aguarde o código...');
+                    showQRStatus('🔄 Conectando... Gerando código...');
                     
-                    // Começar a verificar QR Code mais frequentemente
+                    // Começar a verificar código mais frequentemente
                     const qrInterval = setInterval(async () => {
                         try {
                             const qrResponse = await fetch('/api/qrcode');
                             const qrData = await qrResponse.json();
-                            if (qrData.success && qrData.qrCodeBase64) {
-                                clearInterval(qrInterval);
-                                showQRCode(qrData.qrCodeBase64);
-                            } else if (qrData.success && qrData.linkCode) {
+                            if (qrData.success && qrData.linkCode) {
                                 clearInterval(qrInterval);
                                 showLinkCode(qrData.linkCode);
                             }
@@ -524,20 +527,6 @@
                 btn.disabled = false;
                 btn.textContent = '📤 Enviar Mensagem';
             }
-        }
-
-        function showQRCode(qrCodeBase64) {
-            const qrStatus = document.getElementById('qrStatus');
-            const qrCodeDiv = document.getElementById('qrCode');
-            
-            qrStatus.style.display = 'none';
-            qrCodeDiv.style.display = 'block';
-            qrCodeDiv.innerHTML = `
-                <p><strong>📱 Escaneie o QR Code com seu WhatsApp:</strong></p>
-                <img src="data:image/png;base64,${qrCodeBase64}" alt="QR Code" style="max-width: 100%; border: 2px solid #25D366; border-radius: 10px;">
-                <p><small>Abra WhatsApp > Menu (⋮) > WhatsApp Web > Escanear código</small></p>
-                <p><small><strong>Ou baixe:</strong> <a href="/api/qrcode-image" download="qrcode.png" style="color: #25D366;">⬇️ Download QR Code</a></small></p>
-            `;
         }
 
         function showLinkCode(linkCode) {
