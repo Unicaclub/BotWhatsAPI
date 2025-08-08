@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Link Code</title>
+</head>
+<body>
+    <h1>Teste de Exibição do Código</h1>
+    <div id="resultado"></div>
+    
+    <script>
+        async function testarCodigo() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                console.log('Dados recebidos:', data);
+                
+                const div = document.getElementById('resultado');
+                if (data.linkCode) {
+                    div.innerHTML = `
+                        <h2>✅ Código Encontrado!</h2>
+                        <p><strong>Código:</strong> ${data.linkCode}</p>
+                        <p><strong>Telefone:</strong> ${data.phoneNumber}</p>
+                        <p><strong>Conectado:</strong> ${data.connected}</p>
+                    `;
+                } else {
+                    div.innerHTML = `
+                        <h2>❌ Código não encontrado</h2>
+                        <p>Dados: ${JSON.stringify(data)}</p>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('resultado').innerHTML = `
+                    <h2>❌ Erro</h2>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+        
+        // Testar imediatamente e a cada 3 segundos
+        testarCodigo();
+        setInterval(testarCodigo, 3000);
+    </script>
+</body>
+</html>
