@@ -11,14 +11,17 @@
     "type": "git",
     "url": "git+https://github.com/Unicaclub/BotWhatsAPI.git"
   },
-  "keywords": [],
+  "keywords": ["whatsapp", "bot", "wppconnect"],
   "author": "",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Unicaclub/BotWhatsAPI/issues"
   },
   "homepage": "https://github.com/Unicaclub/BotWhatsAPI#readme",
-  "description": "",
+  "description": "Bot WhatsApp usando WPPConnect",
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "dependencies": {
     "@wppconnect-team/wppconnect": "^1.37.3"
   }
