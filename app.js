@@ -99,7 +99,7 @@ function createBotConfig(phoneNumber, responseCallback) {
         
         // Configuração otimizada para Railway
         baseConfig.puppeteerOptions = {
-            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome',
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
             args: baseConfig.browserArgs,
             handleSIGINT: false,
             handleSIGTERM: false,

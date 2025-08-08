@@ -15,8 +15,8 @@
         "NODE_ENV": "production",
         "PORT": "3000",
         "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true",
-        "PUPPETEER_EXECUTABLE_PATH": "/usr/bin/google-chrome",
-        "CHROME_BIN": "/usr/bin/google-chrome",
+        "PUPPETEER_EXECUTABLE_PATH": "/usr/bin/chromium-browser",
+        "CHROME_BIN": "/usr/bin/chromium-browser",
         "DISPLAY": ":99",
         "RAILWAY_ENVIRONMENT": "true"
       }
