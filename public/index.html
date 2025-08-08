@@ -21,6 +21,15 @@
             padding: 20px;
         }
 
+        .main-container {
+            display: flex;
+            gap: 30px;
+            max-width: 1200px;
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
         .container {
             background: white;
             border-radius: 20px;
@@ -31,21 +40,55 @@
             text-align: center;
         }
 
-        .logo {
-            font-size: 3em;
-            margin-bottom: 20px;
-        }
-
         h1 {
             color: #333;
             margin-bottom: 10px;
             font-size: 2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
+        h1::before {
+            content: "📱";
+            font-size: 1.2em;
+        }
+
+        .input-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 8px;
             font-size: 1.1em;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1.1em;
+            transition: border-color 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #25D366;
+            background: white;
+        }
+
+        .format-info {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+            font-style: italic;
         }
 
         .btn {
@@ -58,7 +101,11 @@
             cursor: pointer;
             transition: all 0.3s ease;
             margin: 10px;
-            min-width: 140px;
+            min-width: 180px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .btn:hover {
@@ -73,12 +120,8 @@
             box-shadow: none;
         }
 
-        .btn.stop {
+        .btn.disconnect {
             background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
-        }
-
-        .btn.stop:hover {
-            box-shadow: 0 8px 20px rgba(255, 71, 87, 0.3);
         }
 
         .status {
@@ -100,13 +143,7 @@
             border: 1px solid #f5c6cb;
         }
 
-        .status.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-
-        .link-code-container {
+        .auth-container {
             margin: 20px 0;
             padding: 20px;
             background: #f8f9fa;
@@ -115,73 +152,34 @@
             display: none;
         }
 
-        .link-code-container.show {
+        .auth-container.show {
             display: block;
-        }
-
-        .link-code {
-            font-family: 'Courier New', monospace;
-            font-size: 1.2em;
-            background: #e9ecef;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-            word-break: break-all;
-            border: 1px solid #ced4da;
-        }
-
-        .instructions {
-            text-align: left;
-            margin: 15px 0;
-            color: #495057;
-            line-height: 1.6;
-        }
-
-        .instructions ol {
-            padding-left: 20px;
-        }
-
-        .instructions li {
-            margin: 8px 0;
         }
 
         .loading {
             display: none;
             margin: 20px 0;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .loading.show {
-            display: block;
+            display: flex;
         }
 
         .spinner {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #25D366;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
         }
 
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
-        }
-
-        .copy-btn {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.9em;
-            margin-top: 10px;
-        }
-
-        .copy-btn:hover {
-            background: #0056b3;
         }
 
         .health-status {
@@ -192,204 +190,209 @@
             border-radius: 5px;
             font-size: 0.8em;
             font-weight: bold;
-        }
-
-        .health-status.healthy {
             background: #d4edda;
             color: #155724;
         }
 
-        .health-status.unhealthy {
-            background: #f8d7da;
-            color: #721c24;
+        .environment-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            font-weight: bold;
+            background: #d1ecf1;
+            color: #0c5460;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="main-container">
+        <div class="environment-info" id="environmentInfo">Carregando...</div>
         <div class="health-status" id="healthStatus">Verificando...</div>
         
-        <div class="logo">📱</div>
-        <h1>Bot WhatsApp</h1>
-        <p class="subtitle">Painel de Controle</p>
+        <!-- Configuração do Bot -->
+        <div class="container">
+            <h1>Configuração do Bot</h1>
+            
+            <div class="input-group">
+                <label for="phoneNumber">Número do WhatsApp do Bot:</label>
+                <input 
+                    type="text" 
+                    id="phoneNumber" 
+                    placeholder="556792024020" 
+                    maxlength="13"
+                    pattern="[0-9]{12,13}"
+                    value="556792024020"
+                >
+                <div class="format-info">Formato: 55XXXXXXXXXXX (12 ou 13 dígitos, sem símbolos)</div>
+            </div>
 
-        <div class="loading" id="loadingDiv">
-            <div class="spinner"></div>
-            <p>Aguarde, iniciando o bot...</p>
+            <div class="loading" id="loadingDiv">
+                <div class="spinner"></div>
+                <span>Aguarde, iniciando o bot...</span>
+            </div>
+
+            <div id="statusDiv" class="status" style="display: none;"></div>
+
+            <button class="btn" id="connectBtn" onclick="connectBot()">
+                🔗 Conectar Bot
+            </button>
+            <button class="btn disconnect" id="disconnectBtn" onclick="disconnectBot()" style="display: none;">
+                ❌ Desconectar
+            </button>
         </div>
 
-        <div id="statusDiv" class="status" style="display: none;"></div>
-
-        <div class="link-code-container" id="linkCodeContainer">
-            <h3>🔗 Código de Vinculação</h3>
-            <div class="link-code" id="linkCodeDisplay"></div>
-            <button class="copy-btn" onclick="copyLinkCode()">📋 Copiar Código</button>
+        <!-- Autenticação WhatsApp -->
+        <div class="container">
+            <h1>Autenticação WhatsApp</h1>
             
-            <div class="instructions">
-                <h4>Como conectar:</h4>
-                <ol>
-                    <li>Abra o WhatsApp no seu celular</li>
-                    <li>Toque em <strong>Mais opções</strong> (⋮) > <strong>Dispositivos conectados</strong></li>
-                    <li>Toque em <strong>Conectar um dispositivo</strong></li>
-                    <li>Digite o código acima quando solicitado</li>
-                </ol>
+            <div class="auth-container" id="authContainer">
+                <h3>🔗 Aguardando Código de Vinculação...</h3>
+                <div class="loading show">
+                    <div class="spinner"></div>
+                    <span>Gerando código de autenticação...</span>
+                </div>
+            </div>
+            
+            <div id="authPlaceholder" style="text-align: center; color: #666; padding: 40px;">
+                Conecte o bot para gerar o código de autenticação
             </div>
         </div>
-
-        <button class="btn" id="startBtn" onclick="startBot()">🚀 Iniciar Bot</button>
-        <button class="btn stop" id="stopBtn" onclick="stopBot()" style="display: none;">⏹️ Parar Bot</button>
     </div>
 
     <script>
+        let currentSession = null;
+        let isProduction = false;
+
+        // Detectar ambiente
+        function detectEnvironment() {
+            const hostname = window.location.hostname;
+            isProduction = hostname.includes('railway.app') || hostname.includes('botwhatsapi-production.up.railway.app');
+            
+            const envInfo = document.getElementById('environmentInfo');
+            envInfo.textContent = isProduction ? 'Produção (Railway)' : 'Desenvolvimento (Local)';
+        }
+
+        // Obter URL base baseada no ambiente
+        function getBaseUrl() {
+            if (isProduction) {
+                return 'https://botwhatsapi-production.up.railway.app';
+            }
+            return window.location.origin;
+        }
+
         // Verificar saúde do servidor
         async function checkHealth() {
             try {
-                const response = await fetch('/health');
-                const data = await response.json();
+                const baseUrl = getBaseUrl();
+                const response = await fetch(baseUrl + '/health');
                 const healthStatus = document.getElementById('healthStatus');
                 
                 if (response.ok) {
                     healthStatus.textContent = 'Sistema Online';
-                    healthStatus.className = 'health-status healthy';
                 } else {
-                    healthStatus.textContent = 'Sistema com Problemas';
-                    healthStatus.className = 'health-status unhealthy';
+                    healthStatus.textContent = 'Sistema Offline';
                 }
             } catch (error) {
-                const healthStatus = document.getElementById('healthStatus');
-                healthStatus.textContent = 'Sistema Offline';
-                healthStatus.className = 'health-status unhealthy';
+                document.getElementById('healthStatus').textContent = 'Sistema Offline';
             }
         }
 
-        // Verificar link code existente
-        async function checkExistingLinkCode() {
-            try {
-                const response = await fetch('/link-code');
-                const data = await response.json();
-                
-                if (data.linkCode) {
-                    displayLinkCode(data.linkCode);
-                    document.getElementById('startBtn').style.display = 'none';
-                    document.getElementById('stopBtn').style.display = 'inline-block';
-                }
-            } catch (error) {
-                console.error('Erro ao verificar link code:', error);
+        // Validar número de telefone
+        function validatePhoneNumber(phone) {
+            if (!phone) return null;
+            const cleanPhone = phone.replace(/\D/g, '');
+            if (cleanPhone.length >= 12 && cleanPhone.length <= 13 && cleanPhone.startsWith('55')) {
+                return cleanPhone;
             }
+            return null;
         }
 
-        async function startBot() {
-            const startBtn = document.getElementById('startBtn');
-            const loadingDiv = document.getElementById('loadingDiv');
-            const statusDiv = document.getElementById('statusDiv');
+        // Conectar bot
+        async function connectBot() {
+            const phoneInput = document.getElementById('phoneNumber');
+            const phoneNumber = validatePhoneNumber(phoneInput.value);
             
-            startBtn.disabled = true;
-            loadingDiv.classList.add('show');
-            statusDiv.style.display = 'none';
+            if (!phoneNumber) {
+                showStatus('Por favor, insira um número válido no formato 55XXXXXXXXXXX', 'error');
+                return;
+            }
+
+            document.getElementById('connectBtn').disabled = true;
+            document.getElementById('loadingDiv').classList.add('show');
+            document.getElementById('authContainer').classList.add('show');
             
             try {
-                const response = await fetch('/start-bot', {
+                const baseUrl = getBaseUrl();
+                const response = await fetch(baseUrl + '/start-bot', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phoneNumber: phoneNumber })
                 });
                 
                 const data = await response.json();
-                
-                loadingDiv.classList.remove('show');
+                document.getElementById('loadingDiv').classList.remove('show');
                 
                 if (data.success) {
-                    showStatus('Bot iniciado com sucesso!', 'success');
-                    startBtn.style.display = 'none';
-                    document.getElementById('stopBtn').style.display = 'inline-block';
+                    showStatus('Bot conectado com sucesso! Número: ' + phoneNumber, 'success');
+                    document.getElementById('connectBtn').style.display = 'none';
+                    document.getElementById('disconnectBtn').style.display = 'inline-flex';
+                    phoneInput.disabled = true;
+                    currentSession = phoneNumber;
                     
                     if (data.linkCode) {
-                        displayLinkCode(data.linkCode);
-                    } else {
-                        // Tentar obter o link code após um delay
-                        setTimeout(checkForLinkCode, 3000);
+                        displayAuthCode(data.linkCode);
                     }
                 } else {
-                    showStatus(data.message || 'Erro ao iniciar bot', 'error');
-                    startBtn.disabled = false;
+                    showStatus(data.message || 'Erro ao conectar bot', 'error');
+                    document.getElementById('connectBtn').disabled = false;
                 }
             } catch (error) {
-                loadingDiv.classList.remove('show');
+                document.getElementById('loadingDiv').classList.remove('show');
                 showStatus('Erro de conexão: ' + error.message, 'error');
-                startBtn.disabled = false;
+                document.getElementById('connectBtn').disabled = false;
             }
         }
 
-        async function stopBot() {
-            const stopBtn = document.getElementById('stopBtn');
-            stopBtn.disabled = true;
-            
+        // Desconectar bot
+        async function disconnectBot() {
             try {
-                const response = await fetch('/stop-bot', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
+                const baseUrl = getBaseUrl();
+                const response = await fetch(baseUrl + '/stop-bot', { method: 'POST' });
                 const data = await response.json();
                 
                 if (data.success) {
-                    showStatus('Bot parado com sucesso!', 'info');
-                    document.getElementById('startBtn').style.display = 'inline-block';
-                    document.getElementById('startBtn').disabled = false;
-                    stopBtn.style.display = 'none';
-                    hideLinkCode();
-                } else {
-                    showStatus(data.message || 'Erro ao parar bot', 'error');
-                    stopBtn.disabled = false;
+                    showStatus('Bot desconectado com sucesso!', 'success');
+                    document.getElementById('connectBtn').style.display = 'inline-flex';
+                    document.getElementById('disconnectBtn').style.display = 'none';
+                    document.getElementById('phoneNumber').disabled = false;
+                    document.getElementById('authContainer').classList.remove('show');
                 }
             } catch (error) {
-                showStatus('Erro de conexão: ' + error.message, 'error');
-                stopBtn.disabled = false;
+                showStatus('Erro ao desconectar: ' + error.message, 'error');
             }
         }
 
-        async function checkForLinkCode() {
-            try {
-                const response = await fetch('/link-code');
-                const data = await response.json();
-                
-                if (data.linkCode) {
-                    displayLinkCode(data.linkCode);
-                }
-            } catch (error) {
-                console.error('Erro ao verificar link code:', error);
-            }
+        // Exibir código de autenticação
+        function displayAuthCode(code) {
+            const authContainer = document.getElementById('authContainer');
+            authContainer.innerHTML = '<h3>🔗 Código de Vinculação</h3><div style="font-family: monospace; font-size: 1.5em; background: #e9ecef; padding: 20px; border-radius: 8px; margin: 15px 0; border: 2px solid #25D366; text-align: center; font-weight: bold;">' + code + '</div><button onclick="copyAuthCode(\'' + code + '\')" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">📋 Copiar Código</button>';
         }
 
-        function displayLinkCode(linkCode) {
-            const container = document.getElementById('linkCodeContainer');
-            const display = document.getElementById('linkCodeDisplay');
-            
-            display.textContent = linkCode;
-            container.classList.add('show');
-        }
-
-        function hideLinkCode() {
-            const container = document.getElementById('linkCodeContainer');
-            container.classList.remove('show');
-        }
-
-        function copyLinkCode() {
-            const linkCode = document.getElementById('linkCodeDisplay').textContent;
-            navigator.clipboard.writeText(linkCode).then(() => {
-                showStatus('Código copiado para a área de transferência!', 'success');
-            }).catch(() => {
-                showStatus('Erro ao copiar código', 'error');
+        // Copiar código de autenticação
+        function copyAuthCode(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                showStatus('Código copiado!', 'success');
             });
         }
 
+        // Exibir status
         function showStatus(message, type) {
             const statusDiv = document.getElementById('statusDiv');
             statusDiv.textContent = message;
-            statusDiv.className = `status ${type}`;
+            statusDiv.className = 'status ' + type;
             statusDiv.style.display = 'block';
             
             setTimeout(() => {
@@ -397,12 +400,10 @@
             }, 5000);
         }
 
-        // Verificar saúde e link code ao carregar a página
+        // Inicializar
         window.addEventListener('load', () => {
+            detectEnvironment();
             checkHealth();
-            checkExistingLinkCode();
-            
-            // Verificar saúde a cada 30 segundos
             setInterval(checkHealth, 30000);
         });
     </script>
