@@ -110,48 +110,6 @@ app.get('/health', (req, res) => {
 });
 
 // Rota para iniciar o bot
-// Rota para demonstração no Railway (sem WPPConnect)
-app.post('/demo-bot', async (req, res) => {
-    try {
-        const { phoneNumber } = req.body;
-        
-        if (!phoneNumber) {
-            return res.status(400).json({
-                success: false,
-                message: 'Número de telefone é obrigatório'
-            });
-        }
-
-        // Validar formato do número
-        const cleanPhone = phoneNumber.replace(/\D/g, '');
-        if (cleanPhone.length < 12 || cleanPhone.length > 13 || !cleanPhone.startsWith('55')) {
-            return res.status(400).json({
-                success: false,
-                message: 'Número inválido. Use o formato: 55XXXXXXXXXXX'
-            });
-        }
-
-        // Simular resposta de demonstração
-        const demoLinkCode = 'DEMO' + Math.random().toString(36).substr(2, 5).toUpperCase();
-        
-        res.json({
-            success: true,
-            message: `Demonstração: Bot seria conectado para ${phoneNumber}`,
-            linkCode: demoLinkCode,
-            phoneNumber: phoneNumber,
-            hasLinkCode: true,
-            note: 'DEMONSTRAÇÃO - Este é um código simulado. Para funcionalidade real, use localhost:3000',
-            isDemo: true
-        });
-        
-    } catch (error) {
-        console.error('Erro na demonstração:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erro interno da demonstração'
-        });
-    }
-});
 
 app.post('/start-bot', async (req, res) => {
     try {
