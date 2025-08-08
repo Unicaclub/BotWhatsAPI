@@ -22,6 +22,7 @@ let botStatus = {
   connected: false,
   qrCode: null,
   qrCodeBase64: null,
+  linkCode: null,
   phoneNumber: null,
   logs: []
 };
@@ -45,41 +46,56 @@ function createBotConfig(phoneNumber) {
   return {
     phoneNumber: phoneNumber,
     session: `session_${phoneNumber}`,
-    catchQR: (base64Qr, asciiQR) => {
+    catchQR: (base64Qr, asciiQR, attempts, urlCode) => {
       addLog('🔑 QR Code gerado para autenticação');
+      console.log('🔑 QR Code recebido - Tentativa:', attempts);
       console.log('🔑 QR Code ASCII:');
       console.log(asciiQR); // Log do QR no terminal
       
       // Processar o base64 QR Code
-      var matches = base64Qr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-      if (matches && matches.length === 3) {
-        // Armazenar o QR Code completo e apenas a parte base64
-        botStatus.qrCode = asciiQR; // ASCII para logs
-        botStatus.qrCodeBase64 = matches[2]; // Base64 puro para o frontend
-        
-        addLog('✅ QR Code processado com sucesso');
-        addLog('📱 QR Code pronto para ser exibido no frontend');
-        
-        // Opcionalmente salvar como arquivo (útil para debug)
-        const fs = require('fs');
-        const imageBuffer = Buffer.from(matches[2], 'base64');
-        fs.writeFile('qrcode.png', imageBuffer, 'binary', (err) => {
-          if (err) {
-            addLog(`❌ Erro ao salvar QR Code: ${err.message}`);
-          } else {
-            addLog('💾 QR Code salvo como qrcode.png');
-          }
-        });
-      } else {
-        addLog('❌ Formato de QR Code inválido');
+      if (base64Qr) {
+        var matches = base64Qr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          // Armazenar o QR Code completo e apenas a parte base64
+          botStatus.qrCode = asciiQR; // ASCII para logs
+          botStatus.qrCodeBase64 = matches[2]; // Base64 puro para o frontend
+          
+          addLog('✅ QR Code processado com sucesso');
+          addLog('📱 QR Code pronto para ser exibido no frontend');
+          
+          // Opcionalmente salvar como arquivo (útil para debug)
+          const fs = require('fs');
+          const imageBuffer = Buffer.from(matches[2], 'base64');
+          fs.writeFile('qrcode.png', imageBuffer, 'binary', (err) => {
+            if (err) {
+              addLog(`❌ Erro ao salvar QR Code: ${err.message}`);
+            } else {
+              addLog('💾 QR Code salvo como qrcode.png');
+            }
+          });
+        } else {
+          addLog('❌ Formato de QR Code inválido');
+        }
+      }
+      
+      // Se tiver urlCode, processar também
+      if (urlCode) {
+        addLog(`🔗 URL do QR Code: ${urlCode}`);
       }
     },
-    // Configurações importantes para Railway
+    catchLinkCode: (code) => {
+      addLog(`🔗 Link Code recebido: ${code}`);
+      botStatus.linkCode = code;
+      addLog('📱 Link Code disponível para conexão');
+    },
+    // Configurações importantes para forçar QR Code
     headless: true,
     devtools: false,
     folderNameToken: './tokens',
     createPathFileToken: true,
-    logQR: false, // Desabilitar log automático do QR
+    logQR: true, // Habilitar log automático do QR para debug
+    disableSpins: true,
+    disableWelcome: true,
     // Configurações específicas para Railway/Linux containers
     browserArgs: [
       '--no-sandbox',
@@ -134,6 +150,15 @@ app.get('/api/qrcode', (req, res) => {
         success: true,
         qrCode: botStatus.qrCode,
         qrCodeBase64: botStatus.qrCodeBase64,
+        linkCode: botStatus.linkCode,
+        phoneNumber: botStatus.phoneNumber,
+        timestamp: new Date().toISOString()
+      });
+    } else if (botStatus.linkCode) {
+      res.json({
+        success: true,
+        linkCode: botStatus.linkCode,
+        message: 'Link Code disponível para conexão',
         phoneNumber: botStatus.phoneNumber,
         timestamp: new Date().toISOString()
       });
@@ -212,6 +237,7 @@ app.post('/api/connect', async (req, res) => {
     // Limpar QR Code anterior
     botStatus.qrCode = null;
     botStatus.qrCodeBase64 = null;
+    botStatus.linkCode = null;
     botStatus.phoneNumber = phoneNumber;
     
     addLog(`📱 Iniciando bot para o número: ${phoneNumber}`);
@@ -251,6 +277,7 @@ app.post('/api/disconnect', async (req, res) => {
       botStatus.connected = false;
       botStatus.qrCode = null;
       botStatus.qrCodeBase64 = null;
+      botStatus.linkCode = null;
       addLog('✅ Bot desconectado com sucesso!');
       res.json({ success: true, message: 'Bot desconectado' });
     } else {
@@ -344,6 +371,7 @@ function start(client) {
         // Limpar QR Code quando conectado
         botStatus.qrCode = null;
         botStatus.qrCodeBase64 = null;
+        botStatus.linkCode = null;
         addLog('✅ WhatsApp conectado com sucesso!');
         break;
       case 'DISCONNECTED':

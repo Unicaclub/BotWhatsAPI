@@ -334,6 +334,8 @@
                 // Atualizar QR Code se disponível
                 if (data.qrCodeBase64) {
                     showQRCode(data.qrCodeBase64);
+                } else if (data.linkCode) {
+                    showLinkCode(data.linkCode);
                 } else if (!data.connected && data.phoneNumber) {
                     showQRStatus('🔄 Gerando QR Code...');
                 }
@@ -352,6 +354,8 @@
                 
                 if (data.success && data.qrCodeBase64) {
                     showQRCode(data.qrCodeBase64);
+                } else if (data.success && data.linkCode) {
+                    showLinkCode(data.linkCode);
                 } else if (data.phoneNumber && !botConnected) {
                     showQRStatus('🔄 Aguardando QR Code...');
                 }
@@ -404,6 +408,9 @@
                             if (qrData.success && qrData.qrCodeBase64) {
                                 clearInterval(qrInterval);
                                 showQRCode(qrData.qrCodeBase64);
+                            } else if (qrData.success && qrData.linkCode) {
+                                clearInterval(qrInterval);
+                                showLinkCode(qrData.linkCode);
                             }
                         } catch (e) {
                             // Continue tentando
@@ -530,6 +537,30 @@
                 <img src="data:image/png;base64,${qrCodeBase64}" alt="QR Code" style="max-width: 100%; border: 2px solid #25D366; border-radius: 10px;">
                 <p><small>Abra WhatsApp > Menu (⋮) > WhatsApp Web > Escanear código</small></p>
                 <p><small><strong>Ou baixe:</strong> <a href="/api/qrcode-image" download="qrcode.png" style="color: #25D366;">⬇️ Download QR Code</a></small></p>
+            `;
+        }
+
+        function showLinkCode(linkCode) {
+            const qrStatus = document.getElementById('qrStatus');
+            const qrCodeDiv = document.getElementById('qrCode');
+            
+            qrStatus.style.display = 'none';
+            qrCodeDiv.style.display = 'block';
+            qrCodeDiv.innerHTML = `
+                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #25D366, #128C7E); border-radius: 15px; color: white;">
+                    <h3>🔗 Código de Conexão WhatsApp</h3>
+                    <div style="background: white; color: #128C7E; padding: 15px; border-radius: 10px; margin: 15px 0; font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold; letter-spacing: 3px;">
+                        ${linkCode}
+                    </div>
+                    <p><small><strong>📱 Como conectar:</strong></small></p>
+                    <ol style="text-align: left; max-width: 300px; margin: 0 auto;">
+                        <li>Abra o WhatsApp no seu celular</li>
+                        <li>Vá em Menu (⋮) > Aparelhos conectados</li>
+                        <li>Toque em "Conectar um aparelho"</li>
+                        <li>Selecione "Conectar com código"</li>
+                        <li>Digite o código: <strong>${linkCode}</strong></li>
+                    </ol>
+                </div>
             `;
         }
 
