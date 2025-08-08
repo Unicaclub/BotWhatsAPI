@@ -3,7 +3,21 @@
 // Teste para verificar se Chromium funciona no Railway
 console.log('🔍 Testando Chromium no ambiente...');
 
-const puppeteer = require('puppeteer');
+let puppeteer;
+try {
+    // Tentar usar o puppeteer do WPPConnect
+    puppeteer = require('@wppconnect-team/wppconnect/node_modules/puppeteer');
+    console.log('✅ Usando puppeteer do WPPConnect');
+} catch (e1) {
+    try {
+        // Fallback para puppeteer global
+        puppeteer = require('puppeteer');
+        console.log('✅ Usando puppeteer global');
+    } catch (e2) {
+        console.error('❌ Puppeteer não encontrado');
+        process.exit(1);
+    }
+}
 const fs = require('fs');
 const path = require('path');
 

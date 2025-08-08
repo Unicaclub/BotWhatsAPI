@@ -10,6 +10,9 @@ README.md
 coverage
 .DS_Store
 *.log
+test-chromium.js
+CLAUDE.md
+INSTRUCOES_USUARIO.md
 # Exclude Chrome cache directories to reduce image size
 tokens/*/Default/Cache
 tokens/*/Default/GPUCache
