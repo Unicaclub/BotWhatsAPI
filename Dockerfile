@@ -10,6 +10,9 @@ RUN apk add --no-cache \
     ttf-freefont \
     && rm -rf /var/cache/apk/*
 
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+
 # Definir variáveis de ambiente para Puppeteer
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
@@ -21,7 +24,15 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
-COPY . .
+# Copiar código
+COPY --chown=nextjs:nodejs . .
+
+
+USER nextjs
+
+# Definir path do Chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Criar diretório para tokens
 RUN mkdir -p tokens
@@ -33,3 +44,5 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 CMD ["npm", "start"]
+
+
