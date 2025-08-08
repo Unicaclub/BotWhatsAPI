@@ -67,7 +67,17 @@ function createBotConfig(phoneNumber, responseCallback) {
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
             '--disable-gpu',
-            '--no-first-run'
+            '--no-first-run',
+            '--disable-extensions',
+            '--disable-default-apps',
+            '--disable-sync',
+            '--disable-background-networking',
+            '--disable-component-update',
+            '--disable-client-side-phishing-detection',
+            '--disable-hang-monitor',
+            '--disable-prompt-on-repost',
+            '--disable-web-security',
+            '--memory-pressure-off'
         ]
     };
 
@@ -80,15 +90,22 @@ function createBotConfig(phoneNumber, responseCallback) {
             '--disable-backgrounding-occluded-windows',
             '--disable-renderer-backgrounding',
             '--disable-features=TranslateUI',
-            '--disable-ipc-flooding-protection'
+            '--disable-ipc-flooding-protection',
+            '--disable-plugins',
+            '--disable-images',
+            '--disable-javascript',
+            '--virtual-time-budget=5000'
         );
         
-        // Verificar se existe executável do Puppeteer
-        if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-            baseConfig.puppeteerOptions = {
-                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH
-            };
-        }
+        // Configuração otimizada para Railway
+        baseConfig.puppeteerOptions = {
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome',
+            args: baseConfig.browserArgs,
+            handleSIGINT: false,
+            handleSIGTERM: false,
+            handleSIGHUP: false,
+            timeout: 30000
+        };
     }
 
     return baseConfig;

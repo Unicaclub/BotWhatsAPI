@@ -1,0 +1,6 @@
+# Railway configuration for Chrome/Puppeteer support
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
+CHROME_BIN=/usr/bin/google-chrome
+NODE_ENV=production
+DISPLAY=:99

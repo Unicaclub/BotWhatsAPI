@@ -1,14 +1,19 @@
 node_modules
 npm-debug.log
+Dockerfile
+.dockerignore
 .git
 .gitignore
 README.md
 .env
 .nyc_output
 coverage
-.nyc_output
-.coverage
-.Dockerfile
-tokens/session
 .DS_Store
 *.log
+# Exclude Chrome cache directories to reduce image size
+tokens/*/Default/Cache
+tokens/*/Default/GPUCache
+tokens/*/Default/Code Cache
+tokens/*/GrShaderCache
+tokens/*/ShaderCache
+tokens/*/Default/Service Worker/CacheStorage
