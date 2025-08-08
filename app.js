@@ -93,7 +93,6 @@ function createBotConfig(phoneNumber, responseCallback) {
             '--disable-ipc-flooding-protection',
             '--disable-plugins',
             '--disable-images',
-            '--disable-javascript',
             '--virtual-time-budget=5000'
         );
         
@@ -124,6 +123,42 @@ app.get('/health', (req, res) => {
         environment: isProduction ? 'production' : 'development',
         session: botSession ? 'connected' : 'disconnected'
     });
+});
+
+// Rota de debug para Railway
+app.get('/debug', (req, res) => {
+    const fs = require('fs');
+    
+    const debugInfo = {
+        environment: {
+            NODE_ENV: process.env.NODE_ENV,
+            RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT,
+            PUPPETEER_EXECUTABLE_PATH: process.env.PUPPETEER_EXECUTABLE_PATH,
+            CHROME_BIN: process.env.CHROME_BIN,
+            isProduction: isProduction
+        },
+        wppconnect: {
+            available: !!wppconnect,
+            hasCreate: !!(wppconnect && wppconnect.create),
+            version: wppconnect ? 'loaded' : 'not loaded'
+        },
+        chromium: {
+            paths: [
+                '/usr/bin/chromium-browser',
+                '/usr/bin/chromium',
+                '/usr/bin/google-chrome'
+            ].map(path => ({
+                path,
+                exists: fs.existsSync(path)
+            }))
+        },
+        session: {
+            hasSession: !!botSession,
+            linkCode: global.linkCode || null
+        }
+    };
+    
+    res.json(debugInfo);
 });
 
 // Rota para iniciar o bot
@@ -161,20 +196,9 @@ app.post('/start-bot', async (req, res) => {
         
         // VERIFICAÇÃO ESPECIAL PARA RAILWAY
         if (isProduction) {
-            console.log('Detectado ambiente Railway - Verificando disponibilidade do WPPConnect...');
-            
-            // Verificar se WPPConnect está disponível no Railway
-            if (!wppconnect || !wppconnect.create) {
-                console.log('WPPConnect não disponível no Railway - Retornando resposta simulada');
-                return res.json({
-                    success: false,
-                    message: 'WPPConnect não está disponível no ambiente Railway. Por favor, use o ambiente local para conectar o bot.',
-                    environment: 'production',
-                    note: 'O Railway não suporta completamente o WPPConnect devido a limitações de navegador. Use localhost:3000 para funcionalidade completa.',
-                    phoneNumber: phoneNumber,
-                    hasLinkCode: false
-                });
-            }
+            console.log('Detectado ambiente Railway - Iniciando WPPConnect...');
+            console.log('WPPConnect disponível:', !!wppconnect);
+            console.log('WPPConnect.create disponível:', !!(wppconnect && wppconnect.create));
         }
         
         // Callback para resposta imediata quando o código for gerado
@@ -241,9 +265,18 @@ app.post('/start-bot', async (req, res) => {
         }
         
         // USAR O MÉTODO CORRETO DO WPPCONNECT
+        console.log('Tentando criar sessão WPPConnect...');
+        console.log('Configuração:', {
+            phoneNumber: config.phoneNumber,
+            session: config.session,
+            headless: config.headless,
+            useChrome: config.useChrome,
+            executablePath: config.puppeteerOptions?.executablePath
+        });
+        
         botSession = await wppconnect.create(config);
         
-        console.log('Sessão criada com sucesso!');
+        console.log('Sessão WPPConnect criada com sucesso!');
         
         // Se ainda não respondeu após a criação, aguardar um pouco mais
         if (!hasResponded) {
