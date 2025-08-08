@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot WhatsApp - Painel de Controle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            min-width: 140px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn.stop {
+            background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
+        }
+
+        .btn.stop:hover {
+            box-shadow: 0 8px 20px rgba(255, 71, 87, 0.3);
+        }
+
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .link-code-container {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px dashed #dee2e6;
+            display: none;
+        }
+
+        .link-code-container.show {
+            display: block;
+        }
+
+        .link-code {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2em;
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            word-break: break-all;
+            border: 1px solid #ced4da;
+        }
+
+        .instructions {
+            text-align: left;
+            margin: 15px 0;
+            color: #495057;
+            line-height: 1.6;
+        }
+
+        .instructions ol {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin: 8px 0;
+        }
+
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #25D366;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .copy-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .copy-btn:hover {
+            background: #0056b3;
+        }
+
+        .health-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .health-status.healthy {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .health-status.unhealthy {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="health-status" id="healthStatus">Verificando...</div>
+        
+        <div class="logo">📱</div>
+        <h1>Bot WhatsApp</h1>
+        <p class="subtitle">Painel de Controle</p>
+
+        <div class="loading" id="loadingDiv">
+            <div class="spinner"></div>
+            <p>Aguarde, iniciando o bot...</p>
+        </div>
+
+        <div id="statusDiv" class="status" style="display: none;"></div>
+
+        <div class="link-code-container" id="linkCodeContainer">
+            <h3>🔗 Código de Vinculação</h3>
+            <div class="link-code" id="linkCodeDisplay"></div>
+            <button class="copy-btn" onclick="copyLinkCode()">📋 Copiar Código</button>
+            
+            <div class="instructions">
+                <h4>Como conectar:</h4>
+                <ol>
+                    <li>Abra o WhatsApp no seu celular</li>
+                    <li>Toque em <strong>Mais opções</strong> (⋮) > <strong>Dispositivos conectados</strong></li>
+                    <li>Toque em <strong>Conectar um dispositivo</strong></li>
+                    <li>Digite o código acima quando solicitado</li>
+                </ol>
+            </div>
+        </div>
+
+        <button class="btn" id="startBtn" onclick="startBot()">🚀 Iniciar Bot</button>
+        <button class="btn stop" id="stopBtn" onclick="stopBot()" style="display: none;">⏹️ Parar Bot</button>
+    </div>
+
+    <script>
+        // Verificar saúde do servidor
+        async function checkHealth() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                const healthStatus = document.getElementById('healthStatus');
+                
+                if (response.ok) {
+                    healthStatus.textContent = 'Sistema Online';
+                    healthStatus.className = 'health-status healthy';
+                } else {
+                    healthStatus.textContent = 'Sistema com Problemas';
+                    healthStatus.className = 'health-status unhealthy';
+                }
+            } catch (error) {
+                const healthStatus = document.getElementById('healthStatus');
+                healthStatus.textContent = 'Sistema Offline';
+                healthStatus.className = 'health-status unhealthy';
+            }
+        }
+
+        // Verificar link code existente
+        async function checkExistingLinkCode() {
+            try {
+                const response = await fetch('/link-code');
+                const data = await response.json();
+                
+                if (data.linkCode) {
+                    displayLinkCode(data.linkCode);
+                    document.getElementById('startBtn').style.display = 'none';
+                    document.getElementById('stopBtn').style.display = 'inline-block';
+                }
+            } catch (error) {
+                console.error('Erro ao verificar link code:', error);
+            }
+        }
+
+        async function startBot() {
+            const startBtn = document.getElementById('startBtn');
+            const loadingDiv = document.getElementById('loadingDiv');
+            const statusDiv = document.getElementById('statusDiv');
+            
+            startBtn.disabled = true;
+            loadingDiv.classList.add('show');
+            statusDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch('/start-bot', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                loadingDiv.classList.remove('show');
+                
+                if (data.success) {
+                    showStatus('Bot iniciado com sucesso!', 'success');
+                    startBtn.style.display = 'none';
+                    document.getElementById('stopBtn').style.display = 'inline-block';
+                    
+                    if (data.linkCode) {
+                        displayLinkCode(data.linkCode);
+                    } else {
+                        // Tentar obter o link code após um delay
+                        setTimeout(checkForLinkCode, 3000);
+                    }
+                } else {
+                    showStatus(data.message || 'Erro ao iniciar bot', 'error');
+                    startBtn.disabled = false;
+                }
+            } catch (error) {
+                loadingDiv.classList.remove('show');
+                showStatus('Erro de conexão: ' + error.message, 'error');
+                startBtn.disabled = false;
+            }
+        }
+
+        async function stopBot() {
+            const stopBtn = document.getElementById('stopBtn');
+            stopBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/stop-bot', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('Bot parado com sucesso!', 'info');
+                    document.getElementById('startBtn').style.display = 'inline-block';
+                    document.getElementById('startBtn').disabled = false;
+                    stopBtn.style.display = 'none';
+                    hideLinkCode();
+                } else {
+                    showStatus(data.message || 'Erro ao parar bot', 'error');
+                    stopBtn.disabled = false;
+                }
+            } catch (error) {
+                showStatus('Erro de conexão: ' + error.message, 'error');
+                stopBtn.disabled = false;
+            }
+        }
+
+        async function checkForLinkCode() {
+            try {
+                const response = await fetch('/link-code');
+                const data = await response.json();
+                
+                if (data.linkCode) {
+                    displayLinkCode(data.linkCode);
+                }
+            } catch (error) {
+                console.error('Erro ao verificar link code:', error);
+            }
+        }
+
+        function displayLinkCode(linkCode) {
+            const container = document.getElementById('linkCodeContainer');
+            const display = document.getElementById('linkCodeDisplay');
+            
+            display.textContent = linkCode;
+            container.classList.add('show');
+        }
+
+        function hideLinkCode() {
+            const container = document.getElementById('linkCodeContainer');
+            container.classList.remove('show');
+        }
+
+        function copyLinkCode() {
+            const linkCode = document.getElementById('linkCodeDisplay').textContent;
+            navigator.clipboard.writeText(linkCode).then(() => {
+                showStatus('Código copiado para a área de transferência!', 'success');
+            }).catch(() => {
+                showStatus('Erro ao copiar código', 'error');
+            });
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusDiv');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Verificar saúde e link code ao carregar a página
+        window.addEventListener('load', () => {
+            checkHealth();
+            checkExistingLinkCode();
+            
+            // Verificar saúde a cada 30 segundos
+            setInterval(checkHealth, 30000);
+        });
+    </script>
+</body>
+</html>
