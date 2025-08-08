@@ -208,8 +208,8 @@
                     <div class="test-section">
                         <div class="input-group">
                             <label for="botPhoneNumber">Número do WhatsApp do Bot:</label>
-                            <input type="text" id="botPhoneNumber" placeholder="5521999999999">
-                            <small>Formato: 55XXXXXXXXXXX (13 dígitos, sem símbolos)</small>
+                            <input type="text" id="botPhoneNumber" placeholder="552199999999">
+                            <small>Formato: 55XXXXXXXXXX (12 dígitos, sem símbolos)</small>
                         </div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                             <button class="btn" onclick="connectBot()" id="connectBtn">
@@ -266,11 +266,24 @@
             </div>
 
             <div class="card">
-                <h3>ℹ️ Informações</h3>
+                <h3>ℹ️ Como Usar</h3>
+                <ol style="text-align: left; margin-left: 20px;">
+                    <li><strong>Configure o número:</strong> Digite seu número do WhatsApp (12 dígitos)</li>
+                    <li><strong>Conecte o bot:</strong> Clique em "Conectar Bot"</li>
+                    <li><strong>Escaneie o QR:</strong> Use WhatsApp Web para escanear</li>
+                    <li><strong>Pronto!</strong> Seu bot estará online</li>
+                </ol>
+                <p><strong>Formato do Número:</strong> 552199999999 (12 dígitos)</p>
+                <p><strong>Exemplo:</strong> 55 + 21 + 99999999</p>
+                <hr>
                 <p><strong>URL do Serviço:</strong> botwhatsapi-production.up.railway.app</p>
                 <p><strong>Versão:</strong> 1.0.0</p>
                 <p><strong>Número Conectado:</strong> <span id="connectedNumber">Nenhum</span></p>
-                <p><strong>Comandos Disponíveis:</strong></p>
+            </div>
+
+            <div class="card">
+                <h3>🤖 Comandos do Bot</h3>
+                <p><strong>Comandos Disponíveis via WhatsApp:</strong></p>
                 <ul>
                     <li><code>Hello</code> - Receber saudação</li>
                     <li><code>/help</code> - Ver ajuda</li>
@@ -287,6 +300,7 @@
         // Atualizar status a cada 5 segundos
         setInterval(updateStatus, 5000);
         setInterval(refreshLogs, 10000);
+        setInterval(checkQRCode, 3000); // Verificar QR Code a cada 3 segundos
 
         // Carregar dados iniciais
         updateStatus();
@@ -331,6 +345,23 @@
             }
         }
 
+        async function checkQRCode() {
+            try {
+                const response = await fetch('/api/qrcode');
+                const data = await response.json();
+                
+                if (data.success && data.qrCodeBase64) {
+                    showQRCode(data.qrCodeBase64);
+                } else if (data.phoneNumber && !botConnected) {
+                    showQRStatus('🔄 Aguardando QR Code...');
+                }
+                
+            } catch (error) {
+                // Silencioso - não mostrar erro para não poluir a interface
+                console.log('Verificando QR Code...');
+            }
+        }
+
         async function connectBot() {
             const phoneNumber = document.getElementById('botPhoneNumber').value;
             const btn = document.getElementById('connectBtn');
@@ -341,9 +372,9 @@
             }
             
             // Validar formato
-            const phoneRegex = /^\d{13}$/;
+            const phoneRegex = /^\d{12}$/;
             if (!phoneRegex.test(phoneNumber)) {
-                alert('Formato inválido! Use 13 dígitos: 5521999999999');
+                alert('Formato inválido! Use 12 dígitos: 552199999999');
                 return;
             }
             
@@ -363,7 +394,24 @@
                 
                 if (result.success) {
                     alert('✅ Processo de conexão iniciado! Aguarde o QR Code...');
-                    showQRStatus('🔄 Conectando... Aguarde o QR Code');
+                    showQRStatus('🔄 Conectando... Gerando QR Code...');
+                    
+                    // Começar a verificar QR Code mais frequentemente
+                    const qrInterval = setInterval(async () => {
+                        try {
+                            const qrResponse = await fetch('/api/qrcode');
+                            const qrData = await qrResponse.json();
+                            if (qrData.success && qrData.qrCodeBase64) {
+                                clearInterval(qrInterval);
+                                showQRCode(qrData.qrCodeBase64);
+                            }
+                        } catch (e) {
+                            // Continue tentando
+                        }
+                    }, 2000);
+                    
+                    // Parar de verificar após 60 segundos
+                    setTimeout(() => clearInterval(qrInterval), 60000);
                 } else {
                     alert('❌ Erro: ' + result.error);
                 }
@@ -480,7 +528,8 @@
             qrCodeDiv.innerHTML = `
                 <p><strong>📱 Escaneie o QR Code com seu WhatsApp:</strong></p>
                 <img src="data:image/png;base64,${qrCodeBase64}" alt="QR Code" style="max-width: 100%; border: 2px solid #25D366; border-radius: 10px;">
-                <p><small>Vá em WhatsApp > Configurações > WhatsApp Web</small></p>
+                <p><small>Abra WhatsApp > Menu (⋮) > WhatsApp Web > Escanear código</small></p>
+                <p><small><strong>Ou baixe:</strong> <a href="/api/qrcode-image" download="qrcode.png" style="color: #25D366;">⬇️ Download QR Code</a></small></p>
             `;
         }
 

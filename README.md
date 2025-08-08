@@ -1,51 +1,120 @@
-# 🤖 Bot WhatsApp - Railway Deploy
+# 🤖 Bot WhatsApp - Arquitetura Full Stack
 
-Bot do WhatsApp usando WPPConnect hospedado no Railway.
+## 📁 Estrutura do Projeto
 
-## 🚀 Deploy no Railway
+```
+BotWhatsAPI/
+├── backend/                 # Servidor Node.js
+│   ├── services/           # Lógica de negócio
+│   │   └── whatsappService.js
+│   ├── routes/             # Endpoints da API
+│   │   ├── whatsapp.js
+│   │   └── status.js
+│   ├── package.json        # Dependências do backend
+│   ├── server.js          # Servidor principal
+│   └── .env.example       # Variáveis de ambiente
+├── frontend/               # Interface web
+│   ├── src/               # Código fonte (dev)
+│   │   ├── components/    # Componentes reutilizáveis
+│   │   └── services/      # Serviços de API
+│   └── dist/              # Arquivos prontos para produção
+│       ├── index.html     # Página principal
+│       ├── styles/        # CSS
+│       │   └── main.css
+│       └── js/            # JavaScript
+│           ├── api.js     # Cliente da API
+│           └── app.js     # Aplicação principal
+├── tokens/                # Sessões do WhatsApp (auto-gerado)
+├── package.json          # Configuração principal
+└── README.md
+```
 
-### 1. Configuração Automática
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/Unicaclub/BotWhatsAPI)
+## 🚀 Como Executar
 
-### 2. Deploy Manual
-1. Conecte seu GitHub no Railway
-2. Selecione este repositório
-3. O deploy será automático
+### Desenvolvimento Local
 
-## ⚙️ Configurações Necessárias
+1. **Instalar dependências:**
+   ```bash
+   cd backend
+   npm install
+   ```
 
-### Variáveis de Ambiente (Opcional)
-No Railway, você pode configurar as seguintes variáveis:
+2. **Configurar ambiente:**
+   ```bash
+   cp .env.example .env
+   # Editar .env com suas configurações
+   ```
 
-- `PHONE_NUMBER`: Seu número do WhatsApp (padrão: 556792024020)
-- `SESSION_NAME`: Nome da sessão (padrão: railwaySession)
+3. **Executar servidor:**
+   ```bash
+   npm run dev
+   ```
 
-### Recursos Necessários
-- **RAM**: Mínimo 512MB (recomendado 1GB)
-- **CPU**: Shared CPU é suficiente
-- **Storage**: 1GB para armazenar sessões
+4. **Acessar aplicação:**
+   - Frontend: http://localhost:3000
+   - API: http://localhost:3000/api
 
-## 📱 Primeira Configuração
+### Produção (Railway)
 
-1. **Após o deploy**, acesse os logs do Railway
-2. Procure por uma mensagem como: `🔑 QR Code: xxxxx`
-3. Use esse código para autenticar via WhatsApp Web
-4. O bot estará pronto para uso!
+1. **Deploy automático:**
+   - O Railway executará `npm start`
+   - Serve backend + frontend integrados
 
-## 🎯 Comandos Disponíveis
+## 🔧 API Endpoints
 
-- `Hello` - Recebe uma saudação
-- `/help` - Lista todos os comandos
-- `/status` - Verifica se o bot está online
+### Status
+- `GET /api/status` - Status do bot e QR Code
+- `GET /api/logs` - Logs do sistema
+- `GET /api/health` - Health check
 
-## 🔧 Monitoramento
+### WhatsApp
+- `POST /api/whatsapp/connect` - Conectar bot
+- `POST /api/whatsapp/disconnect` - Desconectar bot
+- `POST /api/whatsapp/send-message` - Enviar mensagem
 
-- **Logs**: Acesse via Railway Dashboard > Logs
-- **Status**: O bot envia um heartbeat a cada 5 minutos
-- **Reconexão**: Automática em caso de erro
+## 🎯 Funcionalidades
 
-## 📝 Notas Importantes
+### Backend (Node.js + Express)
+- ✅ API RESTful
+- ✅ Serviço WhatsApp isolado
+- ✅ Middleware de segurança
+- ✅ Logs estruturados
+- ✅ Tratamento de erros
+- ✅ Validação de dados
 
-- A primeira configuração pode levar alguns minutos
-- A sessão do WhatsApp fica salva nos tokens
-- Em caso de erro, verifique os logs do Railway
+### Frontend (Vanilla JS)
+- ✅ Interface responsiva
+- ✅ Cliente API modular
+- ✅ Atualização em tempo real
+- ✅ Validação de formulários
+- ✅ Feedback visual
+- ✅ Escape XSS
+
+## 🔒 Segurança
+
+- ✅ Helmet.js para headers de segurança
+- ✅ CORS configurado
+- ✅ Validação de entrada
+- ✅ Escape de HTML
+- ✅ Rate limiting (pode ser adicionado)
+- ✅ Logs de auditoria
+
+## � Fluxo de Dados
+
+1. **Usuário configura número** → Frontend
+2. **POST /api/whatsapp/connect** → Backend
+3. **WhatsApp gera QR Code** → Backend Service
+4. **QR Code convertido para Base64** → Frontend
+5. **Usuário escaneia QR** → WhatsApp
+6. **Bot conectado** → Status atualizado
+7. **Mensagens processadas** → Event listeners
+
+## 📝 Próximas Melhorias
+
+- [ ] Autenticação JWT
+- [ ] Banco de dados para persistência
+- [ ] WebSockets para real-time
+- [ ] Testes automatizados
+- [ ] CI/CD pipeline
+- [ ] Documentação da API (Swagger)
+- [ ] Métricas e monitoramento

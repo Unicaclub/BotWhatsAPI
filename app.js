@@ -1,6 +1,7 @@
 
   // Supports ES6
 // import { create, Whatsapp } from '@wppconnect-team/wppconnect';
+const fs = require('fs');
 const wppconnect = require('@wppconnect-team/wppconnect');
 const express = require('express');
 const cors = require('cors');
@@ -43,27 +44,42 @@ function addLog(message) {
 function createBotConfig(phoneNumber) {
   return {
     phoneNumber: phoneNumber,
-    catchLinkCode: (qrCode) => {
+    session: `session_${phoneNumber}`,
+    catchQR: (base64Qr, asciiQR) => {
       addLog('🔑 QR Code gerado para autenticação');
-      botStatus.qrCode = qrCode;
+      console.log('🔑 QR Code ASCII:');
+      console.log(asciiQR); // Log do QR no terminal
       
-      // Converter QR Code para base64 para exibir no frontend
-      const QRCode = require('qrcode');
-      QRCode.toDataURL(qrCode, (err, url) => {
-        if (!err) {
-          // Extrair apenas a parte base64 da URL
-          botStatus.qrCodeBase64 = url.split(',')[1];
-        }
-      });
-      
-      console.log('🔑 QR Code: ' + qrCode);
+      // Processar o base64 QR Code
+      var matches = base64Qr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      if (matches && matches.length === 3) {
+        // Armazenar o QR Code completo e apenas a parte base64
+        botStatus.qrCode = asciiQR; // ASCII para logs
+        botStatus.qrCodeBase64 = matches[2]; // Base64 puro para o frontend
+        
+        addLog('✅ QR Code processado com sucesso');
+        addLog('📱 QR Code pronto para ser exibido no frontend');
+        
+        // Opcionalmente salvar como arquivo (útil para debug)
+        const fs = require('fs');
+        const imageBuffer = Buffer.from(matches[2], 'base64');
+        fs.writeFile('qrcode.png', imageBuffer, 'binary', (err) => {
+          if (err) {
+            addLog(`❌ Erro ao salvar QR Code: ${err.message}`);
+          } else {
+            addLog('💾 QR Code salvo como qrcode.png');
+          }
+        });
+      } else {
+        addLog('❌ Formato de QR Code inválido');
+      }
     },
     // Configurações importantes para Railway
     headless: true,
     devtools: false,
-    session: `session_${phoneNumber}`,
     folderNameToken: './tokens',
     createPathFileToken: true,
+    logQR: false, // Desabilitar log automático do QR
     // Configurações específicas para Railway/Linux containers
     browserArgs: [
       '--no-sandbox',
@@ -89,9 +105,7 @@ function createBotConfig(phoneNumber) {
         '--disable-dev-shm-usage',
         '--single-process'
       ]
-    },
-    // Log level para debug
-    logQR: true
+    }
   };
 }
 
@@ -112,6 +126,59 @@ app.get('/api/logs', (req, res) => {
   });
 });
 
+// Rota específica para obter QR Code
+app.get('/api/qrcode', (req, res) => {
+  try {
+    if (botStatus.qrCode && botStatus.qrCodeBase64) {
+      res.json({
+        success: true,
+        qrCode: botStatus.qrCode,
+        qrCodeBase64: botStatus.qrCodeBase64,
+        phoneNumber: botStatus.phoneNumber,
+        timestamp: new Date().toISOString()
+      });
+    } else if (botStatus.phoneNumber && !botStatus.connected) {
+      res.json({
+        success: false,
+        message: 'QR Code ainda não foi gerado. Aguarde...',
+        phoneNumber: botStatus.phoneNumber
+      });
+    } else {
+      res.json({
+        success: false,
+        message: 'Nenhuma conexão em andamento. Configure um número primeiro.'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Erro ao obter QR Code',
+      message: error.message
+    });
+  }
+});
+
+// Rota para servir o arquivo QR Code
+app.get('/api/qrcode-image', (req, res) => {
+  try {
+    const qrPath = path.join(__dirname, 'qrcode.png');
+    if (fs.existsSync(qrPath)) {
+      res.sendFile(qrPath);
+    } else {
+      res.status(404).json({
+        success: false,
+        message: 'QR Code não encontrado'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Erro ao obter imagem do QR Code',
+      message: error.message
+    });
+  }
+});
+
 // Nova rota para conectar o bot com número personalizado
 app.post('/api/connect', async (req, res) => {
   try {
@@ -122,11 +189,11 @@ app.post('/api/connect', async (req, res) => {
     }
     
     // Validar formato do número
-    const phoneRegex = /^\d{13}$/; // 13 dígitos: 55 + DD + 9XXXXXXXX
+    const phoneRegex = /^\d{12}$/; // 12 dígitos: 55 + DD + XXXXXXXX
     if (!phoneRegex.test(phoneNumber)) {
       return res.json({ 
         success: false, 
-        error: 'Formato inválido. Use: 5521999999999 (13 dígitos)' 
+        error: 'Formato inválido. Use: 552199999999 (12 dígitos)' 
       });
     }
     
@@ -270,7 +337,32 @@ function start(client) {
   // Monitorar desconexões
   client.onStateChange((state) => {
     addLog(`🔄 Estado do WhatsApp: ${state}`);
-    botStatus.connected = (state === 'CONNECTED');
+    
+    switch(state) {
+      case 'CONNECTED':
+        botStatus.connected = true;
+        // Limpar QR Code quando conectado
+        botStatus.qrCode = null;
+        botStatus.qrCodeBase64 = null;
+        addLog('✅ WhatsApp conectado com sucesso!');
+        break;
+      case 'DISCONNECTED':
+        botStatus.connected = false;
+        addLog('❌ WhatsApp desconectado');
+        break;
+      case 'OPENING':
+        addLog('🔄 Abrindo WhatsApp...');
+        break;
+      case 'PAIRING':
+        addLog('🔗 Pareando dispositivo...');
+        break;
+      case 'TIMEOUT':
+        addLog('⏰ Timeout na conexão');
+        botStatus.connected = false;
+        break;
+      default:
+        addLog(`🔄 Estado: ${state}`);
+    }
   });
   
   // Keepalive para manter o processo ativo
