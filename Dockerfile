@@ -24,18 +24,18 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
+
 # Copiar código
 COPY --chown=nextjs:nodejs . .
 
+# Criar diretório para tokens (como root)
+RUN mkdir -p tokens
 
 USER nextjs
 
 # Definir path do Chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-
-# Criar diretório para tokens
-RUN mkdir -p tokens
 
 EXPOSE 3000
 
