@@ -40,6 +40,11 @@
             text-align: center;
         }
 
+        .logo {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
         h1 {
             color: #333;
             margin-bottom: 10px;
@@ -53,6 +58,12 @@
         h1::before {
             content: "📱";
             font-size: 1.2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
         }
 
         .input-group {
@@ -124,6 +135,10 @@
             background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
         }
 
+        .btn.disconnect:hover {
+            box-shadow: 0 8px 20px rgba(255, 71, 87, 0.3);
+        }
+
         .status {
             margin: 20px 0;
             padding: 15px;
@@ -143,6 +158,12 @@
             border: 1px solid #f5c6cb;
         }
 
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
         .auth-container {
             margin: 20px 0;
             padding: 20px;
@@ -154,6 +175,15 @@
 
         .auth-container.show {
             display: block;
+        }
+
+        .auth-container h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .loading {
@@ -190,8 +220,16 @@
             border-radius: 5px;
             font-size: 0.8em;
             font-weight: bold;
+        }
+
+        .health-status.healthy {
             background: #d4edda;
             color: #155724;
+        }
+
+        .health-status.unhealthy {
+            background: #f8d7da;
+            color: #721c24;
         }
 
         .environment-info {
@@ -204,6 +242,17 @@
             font-weight: bold;
             background: #d1ecf1;
             color: #0c5460;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .container {
+                max-width: 400px;
+            }
         }
     </style>
 </head>
@@ -272,7 +321,18 @@
             isProduction = hostname.includes('railway.app') || hostname.includes('botwhatsapi-production.up.railway.app');
             
             const envInfo = document.getElementById('environmentInfo');
-            envInfo.textContent = isProduction ? 'Produção (Railway)' : 'Desenvolvimento (Local)';
+            envInfo.textContent = isProduction ? 'Produção (Railway) - Limitado' : 'Desenvolvimento (Local)';
+            
+            console.log('Ambiente detectado:', isProduction ? 'Produção' : 'Desenvolvimento');
+            console.log('Hostname:', hostname);
+            
+            // Adicionar aviso na interface se estiver no Railway
+            if (isProduction) {
+                const warningDiv = document.createElement('div');
+                warningDiv.style.cssText = 'position: fixed; top: 50px; left: 10px; right: 10px; background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; border: 1px solid #ffeaa7; z-index: 1000; font-size: 0.9em;';
+                warningDiv.innerHTML = '⚠️ <strong>Ambiente de Demonstração:</strong> O Railway tem limitações com o WPPConnect. Para usar completamente o bot, acesse <a href="http://localhost:3000" style="color: #0066cc;">http://localhost:3000</a>';
+                document.body.appendChild(warningDiv);
+            }
         }
 
         // Obter URL base baseada no ambiente
@@ -287,112 +347,328 @@
         async function checkHealth() {
             try {
                 const baseUrl = getBaseUrl();
-                const response = await fetch(baseUrl + '/health');
+                const response = await fetch(`${baseUrl}/health`);
+                const data = await response.json();
                 const healthStatus = document.getElementById('healthStatus');
                 
                 if (response.ok) {
                     healthStatus.textContent = 'Sistema Online';
+                    healthStatus.className = 'health-status healthy';
                 } else {
-                    healthStatus.textContent = 'Sistema Offline';
+                    healthStatus.textContent = 'Sistema com Problemas';
+                    healthStatus.className = 'health-status unhealthy';
                 }
             } catch (error) {
-                document.getElementById('healthStatus').textContent = 'Sistema Offline';
+                console.error('Erro no health check:', error);
+                const healthStatus = document.getElementById('healthStatus');
+                healthStatus.textContent = 'Sistema Offline';
+                healthStatus.className = 'health-status unhealthy';
             }
         }
 
         // Validar número de telefone
         function validatePhoneNumber(phone) {
-            if (!phone) return null;
+            if (!phone || typeof phone !== 'string') {
+                return null;
+            }
+            
+            // Remove espaços e caracteres especiais
             const cleanPhone = phone.replace(/\D/g, '');
+            
+            // Verifica se tem entre 12 e 13 dígitos e começa com 55
             if (cleanPhone.length >= 12 && cleanPhone.length <= 13 && cleanPhone.startsWith('55')) {
                 return cleanPhone;
             }
+            
             return null;
+        }
+
+        // Formatar número conforme digitação
+        function setupPhoneInput() {
+            const phoneInput = document.getElementById('phoneNumber');
+            if (!phoneInput) return;
+            
+            phoneInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                
+                // Limitar a 13 dígitos
+                if (value.length > 13) {
+                    value = value.substr(0, 13);
+                }
+                
+                e.target.value = value;
+            });
         }
 
         // Conectar bot
         async function connectBot() {
             const phoneInput = document.getElementById('phoneNumber');
-            const phoneNumber = validatePhoneNumber(phoneInput.value);
-            
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            const loadingDiv = document.getElementById('loadingDiv');
+            const authContainer = document.getElementById('authContainer');
+            const authPlaceholder = document.getElementById('authPlaceholder');
+            const phoneNumber = validatePhoneNumber(phoneInput?.value);
+
             if (!phoneNumber) {
                 showStatus('Por favor, insira um número válido no formato 55XXXXXXXXXXX', 'error');
+                phoneInput?.focus();
                 return;
             }
 
-            document.getElementById('connectBtn').disabled = true;
-            document.getElementById('loadingDiv').classList.add('show');
-            document.getElementById('authContainer').classList.add('show');
-            
+            if (connectBtn) connectBtn.disabled = true;
+            if (loadingDiv) loadingDiv.classList.add('show');
+            if (authPlaceholder) authPlaceholder.style.display = 'none';
+            if (authContainer) authContainer.classList.add('show');
+
             try {
                 const baseUrl = getBaseUrl();
-                const response = await fetch(baseUrl + '/start-bot', {
+                const response = await fetch(`${baseUrl}/start-bot`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
                     body: JSON.stringify({ phoneNumber: phoneNumber })
                 });
-                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
                 const data = await response.json();
-                document.getElementById('loadingDiv').classList.remove('show');
-                
+                if (loadingDiv) loadingDiv.classList.remove('show');
                 if (data.success) {
-                    showStatus('Bot conectado com sucesso! Número: ' + phoneNumber, 'success');
-                    document.getElementById('connectBtn').style.display = 'none';
-                    document.getElementById('disconnectBtn').style.display = 'inline-flex';
-                    phoneInput.disabled = true;
+                    showStatus(`Bot conectado com sucesso! Número: ${phoneNumber}`, 'success');
+                    if (connectBtn) connectBtn.style.display = 'none';
+                    if (disconnectBtn) disconnectBtn.style.display = 'inline-flex';
+                    if (phoneInput) phoneInput.disabled = true;
                     currentSession = phoneNumber;
-                    
+                    // Se já tem Link Code na resposta, exibir imediatamente
                     if (data.linkCode) {
                         displayAuthCode(data.linkCode);
+                    } else {
+                        // Caso contrário, verificar por código de autenticação
+                        checkForAuthCode();
                     }
                 } else {
                     showStatus(data.message || 'Erro ao conectar bot', 'error');
-                    document.getElementById('connectBtn').disabled = false;
+                    if (connectBtn) connectBtn.disabled = false;
+                    if (authContainer) authContainer.classList.remove('show');
+                    if (authPlaceholder) authPlaceholder.style.display = 'block';
                 }
             } catch (error) {
-                document.getElementById('loadingDiv').classList.remove('show');
+                console.error('Erro na conexão:', error);
+                if (loadingDiv) loadingDiv.classList.remove('show');
                 showStatus('Erro de conexão: ' + error.message, 'error');
-                document.getElementById('connectBtn').disabled = false;
+                if (connectBtn) connectBtn.disabled = false;
+                if (authContainer) authContainer.classList.remove('show');
+                if (authPlaceholder) authPlaceholder.style.display = 'block';
             }
         }
 
         // Desconectar bot
         async function disconnectBot() {
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            if (disconnectBtn) disconnectBtn.disabled = true;
+            
             try {
                 const baseUrl = getBaseUrl();
-                const response = await fetch(baseUrl + '/stop-bot', { method: 'POST' });
+                const response = await fetch(`${baseUrl}/stop-bot`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+                
                 const data = await response.json();
                 
                 if (data.success) {
-                    showStatus('Bot desconectado com sucesso!', 'success');
-                    document.getElementById('connectBtn').style.display = 'inline-flex';
-                    document.getElementById('disconnectBtn').style.display = 'none';
-                    document.getElementById('phoneNumber').disabled = false;
-                    document.getElementById('authContainer').classList.remove('show');
+                    showStatus('Bot desconectado com sucesso!', 'info');
+                    resetInterface();
+                } else {
+                    showStatus(data.message || 'Erro ao desconectar bot', 'error');
+                    if (disconnectBtn) disconnectBtn.disabled = false;
                 }
             } catch (error) {
-                showStatus('Erro ao desconectar: ' + error.message, 'error');
+                console.error('Erro ao desconectar:', error);
+                showStatus('Erro de conexão: ' + error.message, 'error');
+                if (disconnectBtn) disconnectBtn.disabled = false;
+            }
+        }
+
+        // Resetar interface
+        function resetInterface() {
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            const phoneInput = document.getElementById('phoneNumber');
+            const authContainer = document.getElementById('authContainer');
+            const authPlaceholder = document.getElementById('authPlaceholder');
+            
+            if (connectBtn) {
+                connectBtn.style.display = 'inline-flex';
+                connectBtn.disabled = false;
+            }
+            if (disconnectBtn) disconnectBtn.style.display = 'none';
+            if (phoneInput) phoneInput.disabled = false;
+            if (authContainer) authContainer.classList.remove('show');
+            if (authPlaceholder) authPlaceholder.style.display = 'block';
+            currentSession = null;
+        }
+
+        // Verificar código de autenticação
+        async function checkForAuthCode() {
+            if (!currentSession) {
+                return;
+            }
+            
+            try {
+                const baseUrl = getBaseUrl();
+                const response = await fetch(`${baseUrl}/link-code`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.linkCode) {
+                    displayAuthCode(data.linkCode);
+                    return;
+                }
+                
+                // Se não há código ainda, tentar forçar a geração
+                try {
+                    const forceResponse = await fetch(`${baseUrl}/force-linkcode`, { 
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    if (forceResponse.ok) {
+                        const forceData = await forceResponse.json();
+                        
+                        if (forceData.success && forceData.linkCode) {
+                            displayAuthCode(forceData.linkCode);
+                            return;
+                        }
+                    }
+                } catch (forceError) {
+                    console.warn('Erro ao forçar link code:', forceError);
+                }
+                
+                // Tentar novamente em 2 segundos se ainda temos sessão
+                setTimeout(() => {
+                    if (currentSession) {
+                        checkForAuthCode();
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Erro ao verificar código:', error);
+                // Tentar novamente em 3 segundos se ainda temos sessão
+                setTimeout(() => {
+                    if (currentSession) {
+                        checkForAuthCode();
+                    }
+                }, 3000);
             }
         }
 
         // Exibir código de autenticação
-        function displayAuthCode(code) {
+        function displayAuthCode(code, isDemo = false) {
+            if (!code) return;
+            
             const authContainer = document.getElementById('authContainer');
-            authContainer.innerHTML = '<h3>🔗 Código de Vinculação</h3><div style="font-family: monospace; font-size: 1.5em; background: #e9ecef; padding: 20px; border-radius: 8px; margin: 15px 0; border: 2px solid #25D366; text-align: center; font-weight: bold;">' + code + '</div><button onclick="copyAuthCode(\'' + code + '\')" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">📋 Copiar Código</button>';
+            if (!authContainer) return;
+            
+            const demoWarning = isDemo ? `
+                <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #ffeaa7;">
+                    <strong>⚠️ DEMONSTRAÇÃO:</strong> Este é um código simulado para fins de demonstração. Para usar o bot real, acesse <a href="http://localhost:3000" style="color: #0066cc;">localhost:3000</a>
+                </div>
+            ` : '';
+            
+            authContainer.innerHTML = `
+                <h3>🔗 ${isDemo ? 'Código de Demonstração' : 'Código de Vinculação'}</h3>
+                ${demoWarning}
+                <div style="font-family: 'Courier New', monospace; font-size: 1.5em; background: #e9ecef; padding: 20px; border-radius: 8px; margin: 15px 0; word-break: break-all; border: 2px solid ${isDemo ? '#ffc107' : '#25D366'}; text-align: center; font-weight: bold;">
+                    ${code}
+                </div>
+                <button onclick="copyAuthCode('${code}')" style="background: ${isDemo ? '#ffc107' : '#007bff'}; color: ${isDemo ? '#000' : 'white'}; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px;">
+                    📋 Copiar Código ${isDemo ? '(Demo)' : ''}
+                </button>
+                ${!isDemo ? `
+                <div style="text-align: left; margin: 20px 0; color: #495057; line-height: 1.6;">
+                    <h4>Como conectar:</h4>
+                    <ol style="padding-left: 20px;">
+                        <li style="margin: 8px 0;">Abra o WhatsApp no seu celular</li>
+                        <li style="margin: 8px 0;">Toque em <strong>Mais opções</strong> (⋮) > <strong>Dispositivos conectados</strong></li>
+                        <li style="margin: 8px 0;">Toque em <strong>Conectar um dispositivo</strong></li>
+                        <li style="margin: 8px 0;">Digite o código <strong>${code}</strong> quando solicitado</li>
+                    </ol>
+                </div>
+                ` : `
+                <div style="text-align: left; margin: 20px 0; color: #856404; line-height: 1.6;">
+                    <h4>⚠️ Este é apenas uma demonstração:</h4>
+                    <ul style="padding-left: 20px;">
+                        <li style="margin: 8px 0;">O código acima é simulado</li>
+                        <li style="margin: 8px 0;">Não funcionará no WhatsApp real</li>
+                        <li style="margin: 8px 0;">Para usar o bot real, acesse <strong>localhost:3000</strong></li>
+                    </ul>
+                </div>
+                `}
+            `;
         }
 
         // Copiar código de autenticação
         function copyAuthCode(code) {
-            navigator.clipboard.writeText(code).then(() => {
-                showStatus('Código copiado!', 'success');
-            });
+            if (!code) return;
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(code).then(() => {
+                    showStatus('Código copiado para a área de transferência!', 'success');
+                }).catch(() => {
+                    fallbackCopyTextToClipboard(code);
+                });
+            } else {
+                fallbackCopyTextToClipboard(code);
+            }
+        }
+
+        // Fallback para copiar texto
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showStatus('Código copiado para a área de transferência!', 'success');
+                } else {
+                    showStatus('Erro ao copiar código', 'error');
+                }
+            } catch (err) {
+                showStatus('Erro ao copiar código', 'error');
+            }
+            
+            document.body.removeChild(textArea);
         }
 
         // Exibir status
         function showStatus(message, type) {
             const statusDiv = document.getElementById('statusDiv');
+            if (!statusDiv) return;
+            
             statusDiv.textContent = message;
-            statusDiv.className = 'status ' + type;
+            statusDiv.className = `status ${type}`;
             statusDiv.style.display = 'block';
             
             setTimeout(() => {
@@ -400,12 +676,62 @@
             }, 5000);
         }
 
-        // Inicializar
+        // Verificar sessão existente ao carregar
+        async function checkExistingSession() {
+            try {
+                const baseUrl = getBaseUrl();
+                const response = await fetch(`${baseUrl}/link-code`);
+                
+                if (!response.ok) {
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                if (data.hasSession) {
+                    // Há uma sessão ativa
+                    const phoneInput = document.getElementById('phoneNumber');
+                    if (phoneInput) {
+                        phoneInput.disabled = true;
+                    }
+                    
+                    const connectBtn = document.getElementById('connectBtn');
+                    const disconnectBtn = document.getElementById('disconnectBtn');
+                    const authPlaceholder = document.getElementById('authPlaceholder');
+                    const authContainer = document.getElementById('authContainer');
+                    
+                    if (connectBtn) connectBtn.style.display = 'none';
+                    if (disconnectBtn) disconnectBtn.style.display = 'inline-flex';
+                    if (authPlaceholder) authPlaceholder.style.display = 'none';
+                    if (authContainer) authContainer.classList.add('show');
+                    
+                    currentSession = phoneInput?.value || '556792024020';
+                    
+                    if (data.linkCode) {
+                        displayAuthCode(data.linkCode);
+                    } else {
+                        checkForAuthCode();
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao verificar sessão existente:', error);
+            }
+        }
+
+        // Inicializar quando a página carregar
         window.addEventListener('load', () => {
             detectEnvironment();
+            setupPhoneInput();
             checkHealth();
+            checkExistingSession();
+            
+            // Verificar saúde a cada 30 segundos
             setInterval(checkHealth, 30000);
         });
+
+        // Log para debug
+        console.log('Frontend carregado');
+        console.log('URL atual:', window.location.href);
     </script>
 </body>
 </html>
